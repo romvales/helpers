@@ -1,0 +1,12 @@
+# netbox-install/tasks.yml
+#
+
+# Netbox configuration
+netbox_dir: netbox-docker
+netbox_source: ./{{ netbox_dir }}/
+netbox_remote: ~/{{ netbox_dir }}/
+
+# Uptime-kuma configuration
+kuma_dir: uptime-kuma
+kuma_source: ./{{ kuma_dir }}/
+kuma_remote: ~/{{ kuma_dir }}/

@@ -1,0 +1,17 @@
+version: '3.3'
+services:
+  freeipa:
+    image:
+    volumes:
+    environment:
+  samba:
+    image:
+    volumes:
+    environment:
+      SAMBA_DC_ADMIN_PASSWD:
+      KERBEROS_PASSWORD:
+      SAMBA_DC_DOMAIN:
+      SAMBA_DC_REALM:
+      SAMBA_DC_DNS_BACKEND:
+      SAMBA_OPTIONS:
+      TEST_USER: false

@@ -1,0 +1,44 @@
+- name: Install netbox to the host
+  hosts: mon_net
+  tags:
+    - setup_netbox
+
+  tasks:  
+    - name: Copies the `netbox-docker` folder to the host
+      ansible.builtin.synchronize:
+        src: "{{ netbox_source }}"
+        dest: "{{ netbox_remote }}"
+        mode: push
+        delete: yes
+        rsync_opts:
+          - "--exclude=.git"
+          - "--exclude=.github"
+          - "--exclude=.gitignore"
+
+    - name: Start netbox
+      community.docker.docker_compose_v2:
+        project_src: "{{ netbox_remote }}"
+        state: present
+        pull: missing
+        build: never
+        remove_orphans: yes
+      register: compose_output
+
+    - name: Show compose output result
+      ansible.builtin.debug:
+        var: compose_output
+      
+- name: Teardown the netbox service
+  hosts: mon_net
+  tags:
+    - teardown_netbox
+  tasks:
+    - name: Shutdown netbox
+      community.docker.docker_compose_v2:
+        project_src: "{{ netbox_remote }}"
+        state: absent
+      register: compose_output
+
+    - name: Show compose output result
+      ansible.builtin.debug:
+        var: compose_output

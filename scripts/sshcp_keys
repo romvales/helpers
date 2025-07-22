@@ -1,0 +1,13 @@
+#!/bin/bash -
+
+export MACHINE_CREDENTIALS=${MACHINE_CREDENTIALS:-}
+export SSH_PUBLIC_KEY=${SSH_PUBLIC_KEY:-}
+
+IFS=$'\n'
+for cred in $(cat $MACHINE_CREDENTIALS); do
+	IFS=$'\t'
+
+	read -r host user pass <<< "$cred"
+	declare -a command="SSHPASS=\"$pass\" sshpass -e ssh-copy-id -i $SSH_PUBLIC_KEY -o StrictHostKeyChecking=no $user@$host"
+	eval $command
+done

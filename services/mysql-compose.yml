@@ -1,0 +1,15 @@
+version: '3.3'
+
+services:
+  tmp_mysql:
+    image: mysql
+    environment:
+      - 'MYSQL_ROOT_PASSWORD=root'
+    volumes:
+      - tmp_mysql_data:/var/lib/mysql
+    ports:
+      - '3307:3306'
+
+volumes:
+  tmp_mysql_data:
+    driver: local

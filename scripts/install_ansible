@@ -1,0 +1,10 @@
+#!/bin/bash -
+
+export CODENAME=jammy
+export KEYRING_URL='https://keyserver.ubuntu.com/pks/lookup?fingerprint=on&op=get&search=0x6125E2A8C77F2818FB7BD15B93C4A3FD7BB9C367'
+export ANSIBLE_SOURCES="deb [signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] http://ppa.launchpad.net/ansible/ansible/ubuntu $CODENAME main"
+
+wget -O- $KEYRING_URL | sudo gpg --dearmour -o /usr/share/keyrings/ansible-archive-keyring.gpg
+echo $ANSIBLE_SOURCES | sudo tee /etc/apt/sources.list.d/ansible.list
+
+sudo apt update && sudo apt install ansible

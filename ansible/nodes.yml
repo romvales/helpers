@@ -1,0 +1,51 @@
+
+manila_net:
+  hosts:
+    sycamore_mnl_node0:
+      ansible_host: 192.168.254.5
+    sycamore_mnl_node1:
+      ansible_host: 192.168.254.7
+    sycamore_mnl_node2:
+      ansible_host: 192.168.254.10
+    sycamore_mnl_node3:
+      ansible_host: 192.168.254.12
+    sycamore_mnl_node4:
+      ansible_host: 192.168.254.15
+    sycamore_mnl_node5:
+      ansible_host: 192.168.254.17
+    sycamore_mnl_node6:
+      ansible_host: 192.168.254.19
+    sycamore_mnl_node7:
+      ansible_host: 192.168.254.50
+    sycamore_mnl_node12:
+      ansible_host: 192.168.254.13  
+
+albay_net:
+  hosts:
+    monsoon_bcl_node8:
+      ansible_host: 192.168.253.7
+    monsoon_bcl_node9:
+      ansible_host: 192.168.253.15
+    monsoon_bcl_node10:
+      ansible_host: 192.168.253.5
+    monsoon_bcl_node11:
+      ansible_host: 192.168.253.9
+    monsoon_bcl_node13:
+      ansible_host: 192.168.253.122
+
+doff_networks:
+  children:
+    manila_net:
+    albay_net:
+
+mock_net:
+  hosts:
+    monsoon_bcl_node13:
+      ansible_host: 192.168.253.122
+
+mon_net:
+  hosts:
+    sycamore_mnl_node12:
+      ansible_host: 192.168.254.13
+      ansible_user: ansible
+

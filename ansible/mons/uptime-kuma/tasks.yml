@@ -1,0 +1,39 @@
+- name: Install uptime-kuma in the host
+  hosts: mon_net
+  tags:
+    - setup_kuma
+  tasks:
+    - name: Copies the uptime-kuma directory to the host
+      ansible.builtin.synchronize:
+        src: "{{ kuma_source }}"
+        dest: "{{ kuma_remote }}"
+        mode: push
+        delete: no
+
+    - name: Start uptime-kuma
+      community.docker.docker_compose_v2:
+        project_src: "{{ kuma_remote }}"
+        state: present
+        pull: missing
+        build: never
+        remove_orphans: yes
+      register: compose_output
+
+    - name: Show compose output result
+      ansible.builtin.debug:
+        var: compose_output
+
+- name: Teardown uptime-kuma in the host
+  hosts: mon_net
+  tags:
+    - teardown_kuma
+  tasks:
+    - name: Shutdown netbox
+      community.docker.docker_compose_v2:
+        project_src: "{{ kuma_remote }}"
+        state: absent
+      register: compose_output
+
+    - name: Show compose output result
+      ansible.builtin.debug:
+        var: compose_output
