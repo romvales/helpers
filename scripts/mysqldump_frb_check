@@ -83,7 +83,7 @@ for index in ${!BACKUP_SERVERS[@]}; do
       break
     fi
 
-    read -p "Continue FRB check on ${BACKUP_SERVERS[$next]}? [y/N]" prompt && [[ $prompt == [nN] ]] && break
+    read -p "Continue FRB check on ${BACKUP_SERVERS[$next]}? [y/N]" prompt && [[ $prompt != [yY] ]] && break
   }
 done
 
