@@ -1,0 +1,9 @@
+version: '3.3'
+
+services:
+  mon_grafana:
+    image: grafana/grafana-enterprise
+    container_name: mon_grafana
+    restart: always
+    ports:
+      - '9030:3000'

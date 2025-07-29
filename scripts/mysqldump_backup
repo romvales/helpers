@@ -1,0 +1,88 @@
+#!/bin/bash -
+
+export MYSQL_USER=${MYSQL_USER:-}
+export MYSQL_PASS=${MYSQL_PASS:-}
+export MYSQL_HOST=${MYSQL_HOST:-}
+export MYSQL_PORT=${MYSQL_PORT:-3306}
+export MYSQL_OPTS="-u${MYSQL_USER} -p${MYSQL_PASS} -h ${MYSQL_HOST} -P ${MYSQL_PORT}"
+
+export MYSQLDUMP_FULLBACKUP_DIR=${MYSQLDUMP_FULLBACKUP_DIR:-/var/backups}
+export MYSQLDUMP_FULLBACKUP_OPTS="${MYSQL_OPTS} --routines --triggers --events"
+
+export DATE=$(date +%F)
+
+for arg in ${@}; do
+  case $arg in
+  --full-backup)
+    declare -i isFullBackup=1
+    ;;
+  --split-databases)
+    declare -i isSplitDatabases=1
+    ;;
+  --incremental-backup)
+    declare -i isIncrementalBackup=1
+    ;;
+  --*)
+    echo "Invalid argument: $arg" >/dev/stderr
+    exit 1
+    ;;
+  *) ;;
+  esac
+done
+
+incremental() {
+  echo "Incremental backup is not implemented"
+}
+
+full() {
+  # If the full backup directory doesn't exist, create it.
+  mkdir -p $MYSQLDUMP_FULLBACKUP_DIR >/dev/null
+
+  if [[ $isSplitDatabases -eq 1 ]]; then
+    grepPatt='(Database|information_schema|performance_schema|mysql|sys)'
+    databaseNames=$(mysql ${MYSQL_OPTS} -e 'SHOW DATABASES;' | grep -Ev $grepPatt)
+  fi
+
+  [[ ${#databaseNames} -ne 0 ]] && {
+    mkdir -p ${MYSQLDUMP_FULLBACKUP_DIR}/${DATE} >/dev/null
+
+    # Split full backup
+    for db in ${databaseNames[@]}; do
+      echo "$MYSQL_HOST: Backing up $db..."
+      mysqldump ${MYSQLDUMP_FULLBACKUP_OPTS} -d $db >${MYSQLDUMP_FULLBACKUP_DIR}/${DATE}/${db}.sql
+      [[ $? -ne 0 ]] && echo "$MYSQL_HOST: Failed to backup $db" >/dev/stderr
+    done
+  }
+
+  [[ ${#databaseNames} -eq 0 ]] && {
+    # Combined full backup
+    echo "$MYSQL_HOST: Backing up all databases..."
+    opts="${MYSQLDUMP_FULLBACKUP_OPTS} --all-databases"
+
+    mysqldump $opts --no-data >${MYSQLDUMP_FULLBACKUP_DIR}/combined_${DATE}_schema.sql
+    #mysqldump $opts --no-create-info >${MYSQLDUMP_FULLBACKUP_DIR}/combined_${DATE}.sql
+
+    [[ $? -ne 0 ]] && echo "$MYSQL_HOST: Failed to backup $db" >/dev/stderr
+  }
+
+}
+
+main() {
+  [ -z $MYSQL_USER ] && echo "MYSQL_USER is not set" && declare -i hasMissingVars=1
+  [ -z $MYSQL_PASS ] && echo "MYSQL_PASS is not set" && declare -i hasMissingVars=1
+  [ -z $MYSQL_HOST ] && echo "MYSQL_HOST is not set" && declare -i hasMissingVars=1
+  [ -z $MYSQL_PORT ] && echo "MYSQL_PORT is not set" && declare -i hasMissingVars=1
+
+  # Exit whenever there are missing environment variables.
+  [[ $hasMissingVars -eq 1 ]] && exit 1
+
+  if [[ $isFullBackup -eq 1 ]]; then
+    full
+  fi
+
+  if [[ $isIncrementalBackup -eq 1 ]]; then
+    incremental
+  fi
+}
+
+main ${@}

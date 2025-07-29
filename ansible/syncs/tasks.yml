@@ -1,0 +1,18 @@
+# [rsync node]
+- name: pbook
+  gather_facts: no
+  tags:
+    - sync_init
+  hosts:
+    - monsoon_bcl_node8 # 192.168.253.7
+  tasks:
+    - name: Copies /var/www/system_files from `sycamore-mnl-node1` to this `monsoon-bcl-node8`
+      shell: rsync -avz ansible@192.168.254.7:/var/www/system_files/ /var/www/system_files_ansible
+      become: true
+
+- name:
+  remote_user: ansible
+  tags:
+    - sync_teardown
+  hosts:
+    - rsync_hosts

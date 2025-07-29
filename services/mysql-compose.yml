@@ -3,10 +3,12 @@ version: '3.3'
 services:
   tmp_mysql:
     image: mysql
+    restart: always
     environment:
       - 'MYSQL_ROOT_PASSWORD=root'
     volumes:
       - tmp_mysql_data:/var/lib/mysql
+      - ./etc/tmp_mysql/conf.d:/etc/mysql/conf.d
     ports:
       - '3307:3306'
 

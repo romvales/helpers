@@ -1,12 +1,21 @@
 version: '3.3'
 services:
   freeipa:
-    image:
+    # https://hub.docker.com/r/freeipa/freeipa-server
+    image: freeipa/freeipa-server:rocky-9
     volumes:
+    ports:
     environment:
+
   samba:
-    image:
+    image: dperson/samba:amd64
     volumes:
+      - ./etc/samba:/etc/samba
+    ports:
+      - '139:139'
+      - '445:445'
+      - '137:137'
+      - '138:138'
     environment:
       SAMBA_DC_ADMIN_PASSWD:
       KERBEROS_PASSWORD:

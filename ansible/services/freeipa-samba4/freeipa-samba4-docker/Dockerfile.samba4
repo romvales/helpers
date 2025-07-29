@@ -1,0 +1,24 @@
+FROM rockylinux:9
+
+ENV SAMBA_USER = samba
+
+COPY ./run_samba /
+
+RUN dnf update -y && dnf install -y \
+  samba samba-common samba-client \
+  samba-winbind samba-winbind-clients krb5-workstation \
+  rsync attr acl && dnf clean all
+
+# Create samba user and group
+RUN groupadd -r samba && useradd -r -g samba -d /var/lib/samba -s /sbin/nologin samba
+
+RUN chmod +x /run_samba && mkdir -p /var/lib/samba/{sysvol,private} /var/log/samba
+
+RUN chown -R $SAMBA_USER:$SAMBA_USER /var/{lib,log}/samba
+
+EXPOSE 139 445 137/udp 138/udp
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD smbclient -L localhost -U% || exit 1
+
+CMD ["/run_samba"]
