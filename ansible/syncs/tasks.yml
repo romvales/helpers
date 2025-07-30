@@ -36,7 +36,7 @@
       cron:
         name: rsync_2
         minute: '*/1'
-        job: sudo -u ws3 rsync -avrt --rsh='ssh' ansible@192.168.253.15:{{ new_doff_system_files }} {{ new_doff_system_files }}
+        job: sudo -u ws3 rsync -avrt --rsh='ssh' ansible@192.168.253.15:{{ new_doff_system_files_dir }} {{ new_doff_system_files_dir }}
 
     - name: Ensures /var/www/system_files/ to sync from node7 to node1
       tags:
@@ -99,6 +99,11 @@
         name: rsync_6
         minute: '0'
         hour: '7'
+        job: |
+          sudo -u hp4k6q2 sh <<EOF
+            php {{ task_scheduler_dir }}/template_email.php
+            php {{ task_scheduler_dir }}/unsent_email.php
+          EOF
 
     - name: Creates a cron job that executes every 8:00 AM
       tags:
