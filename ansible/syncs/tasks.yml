@@ -1,18 +1,261 @@
-# [rsync node]
-- name: pbook
-  gather_facts: no
-  tags:
-    - sync_init
+- name: Synchronize some files between nodes in the network.
+  gather_facts: false 
   hosts:
-    - monsoon_bcl_node8 # 192.168.253.7
-  tasks:
-    - name: Copies /var/www/system_files from `sycamore-mnl-node1` to this `monsoon-bcl-node8`
-      shell: rsync -avz ansible@192.168.254.7:/var/www/system_files/ /var/www/system_files_ansible
-      become: true
+    - sycamore_mnl_node1    # 192.168.254.7
+    - sycamore_mnl_node2    # 192.168.254.10
+    - sycamore_mnl_node7    # 192.168.254.50
+    - monsoon_bcl_node8     # 192.168.253.7
+    - monsoon_bcl_node9     # 192.168.253.15
 
-- name:
-  remote_user: ansible
-  tags:
-    - sync_teardown
-  hosts:
-    - rsync_hosts
+  vars:
+    doff_system_storage_dir: /var/www/html/doffsystem/storage/app/
+    leave_requirements_dir: /public/system_files/leave_requirements/ 
+    new_doff_system_files_dir: /var/www/new_doff/public/system_files/
+    system_files_dir: /var/www/system_files/
+    html_dir: /var/www/html/
+    www_dir: /var/www/
+    fuelhub_dir: /var/www/html/fuelhub/ 
+    task_scheduler_dir: /var/www/task-scheduler
+    test_folder_dir: /tmp/sync_test_files/
+  tasks:
+    # Install tasks
+
+    - name: Ensures /var/www/new_doff/public/system_files/ to sync from node7 to node9
+      tags: 
+        - sync_install
+      when: inventory_hostname == 'monsoon_bcl_node9'
+      cron:
+        name: rsync_1
+        minute: '*/1'
+        job: "sudo -u w1 rsync -avrt --rsh='ssh' ansible@192.168.254.50:{{ new_doff_system_files_dir }} {{ new_doff_system_files_dir }}"
+
+    - name: Ensures /var/www/new_doff/public/system_files/ to sync from node9 to node7
+      tags:
+        - sync_install
+      when: inventory_hostname == 'sycamore_mnl_node7'
+      cron:
+        name: rsync_2
+        minute: '*/1'
+        job: sudo -u ws3 rsync -avrt --rsh='ssh' ansible@192.168.253.15:{{ new_doff_system_files }} {{ new_doff_system_files }}
+
+    - name: Ensures /var/www/system_files/ to sync from node7 to node1
+      tags:
+        - sync_install
+      when: inventory_hostname == 'sycamore_mnl_node7'
+      cron:
+        name: rsync_3
+        minute: '*/1'
+        job: sudo -u ws3 rsync -avrt -p --rsh='ssh' hp4k6q2@192.168.254.7:{{ system_files_dir }} {{ system_files_dir }}
+
+    - name: Install this cron that executes every 5 minutes
+      tags:
+        - sync_install
+      when: inventory_hostname == 'sycamore_mnl_node1'
+      cron:
+        name: rsync_4
+        minute: '*/5'
+        job: |
+          sudo -u hp4k6q2 sh <<EOF
+            php {{ task_scheduler_dir }}/self_audit.php
+            php {{ task_scheduler_dir }}/discount_coupon_email.php
+            php {{ task_scheduler_dir }}/discount_coupon.php
+            php {{ task_scheduler_dir }}/personal_corporate_account.php
+            php {{ task_scheduler_dir }}/personal_corporate_account_cb.php
+            php {{ task_scheduler_dir }}/personal_corporate_account_deactivate.php
+            php {{ task_scheduler_dir }}/personal_corporate_account_ie.php
+            php {{ task_scheduler_dir }}/personal_corporate_account_soa.php
+          EOF
+
+    - name: Install this cron that executes every 10 minutes
+      tags:
+        - sync_install
+      when: inventory_hostname == 'sycamore_mnl_node1'
+      cron:
+        name: rsync_7
+        minute: '*/10'
+        job: |
+          sudo -u hp4k6q2 sh <<EOF
+            php {{ task_scheduler_dir }}/auto_manifest.php
+            php {{ task_scheduler_dir }}/auto_sms.php
+          EOF
+
+    - name: Install this cron that executes every 30 minutes
+      tags:
+        - sync_install
+      when: inventory_hostname == 'sycamore_mnl_node1'
+      cron:
+        name: rsync_5
+        minute: '*/30'
+        job: |
+          sudo -u hp4k6q2 sh <<EOF
+            php {{ task_scheduler_dir }}/newsletter.php
+          EOF
+
+    - name: Creates a cron job that executes every 7:00 AM
+      tags:
+        - sync_install
+      when: inventory_hostname == 'sycamore_mnl_node1'
+      cron:
+        name: rsync_6
+        minute: '0'
+        hour: '7'
+
+    - name: Creates a cron job that executes every 8:00 AM
+      tags:
+        - sync_install
+      when: inventory_hostname == 'sycamore_mnl_node1'
+      cron:
+        name: rsync_8
+        minute: '0'
+        hour: '8'
+        job: |
+          sudo -u hp4k6q2 sh <<EOF
+            php {{ task_scheduler_dir }}/supplier_auto_online_confirmation.php
+          EOF
+
+    - name: Install this cron job that executes in a 1-hour interval.
+      tags:
+        - sync_install
+      when: inventory_hostname == 'sycamore_mnl_node1'
+      cron:
+        name: rsync_9
+        minute: '0'
+        hour: '*/1'
+        job: |
+          sudo -u hp4k6q2 sh <<EOF
+            php {{ task_scheduler_dir }}/script.php
+          EOF
+
+    - name: Synchronize files from `sycamore_mnl_node7` with other nodes
+      tags:
+        - sync_install
+      when: inventory_hostname == 'sycamore_mnl_node7'
+      cron:
+        name: rsync_10
+        minute: '*/1'
+        job: |
+          sudo -u ws3 sh <<EOF
+            rsync -avrt -p --rsh='ssh' hp4k6q2@192.168.254.7:{{ system_files_dir }} {{ system_files_dir }}
+            rsync -avrt -p --delete \
+              --exclude=/management/doff/waybilling/includes/tcpdf \
+              --exclude-from=/etc/exclude-list.txt \
+              --rsh='ssh' hp4k6q2@192.168.254.7:{{ html_dir }} {{ html_dir }}
+
+            rsync -av /var/www/new_employee{{ leave_requirements_dir }} /var/www/new_doff{{ leave_requirements_dir }}
+          EOF
+
+    - name: Synchronize files from `monsoon_bcl_node9` with other nodes every minute.
+      tags:
+        - sync_install
+      when: inventory_hostname == 'monsoon_bcl_node9'
+      cron:
+        name: rsync_11
+        minute: '*/1'
+        job: |
+          sudo -u w1 sh <<EOF
+            rsync -avrt -m --delete --exclude-from=/etc/exclude-list.txt --rsh='ssh' hp4k6q2@192.168.254.7:{{ www_dir }} {{ www_dir }}
+            rsync -avrt -p --rsh='ssh' hp4k6q2@192.168.254.7:{{ system_files_dir }} {{ system_files_dir }}
+            rsync -avrt -p --rsh='ssh' w2@192.168.254.10:{{ system_files_dir }} {{ system_files_dir }}
+            rsync -av /var/www/new_employee{{ leave_requirements_dir }} /var/www/new_doff{{ leave_requirements_dir }}
+          EOF
+
+    - name: Synchronize files from `sycamore_mnl_node1` with other nodes every minute.
+      tags:
+        - sync_install
+      when: inventory_hostname == 'sycamore_mnl_node1'
+      cron:
+        name: rsync_12
+        minute: '*/1'
+        job: |
+          sudo -u hp4k6q2 sh <<EOF
+            rsync -avrt -p --rsh='ssh' fuelhubserver@192.168.254.50:{{ fuelhub_dir }} {{ fuelhub_dir }}
+            rsync -avrt -p --rsh='ssh' ho-w1@192.168.253.7:{{ system_files_dir }} {{ system_files_dir }}
+            rsync -avrt -p --rsh='ssh' w2@192.168.253.10:{{ system_files_dir }} {{ system_files_dir }}
+            rsync -avrt -p --rsh='ssh' w2@192.168.253.10:{{ doff_system_storage_dir }} {{ doff_system_storage_dir }}
+          EOF
+
+    # Teardown tasks
+
+    - name: Teardown rsync_1
+      tags:
+        - sync_teardown
+      cron:
+        name: rsync_1
+        state: absent
+
+    - name: Teardown rsync_2
+      tags:
+        - sync_teardown
+      cron:
+        name: rsync_2
+        state: absent
+
+    - name: Teardown rsync_3
+      tags:
+        - sync_teardown
+      cron:
+        name: rsync_3
+        state: absent
+
+    - name: Teardown rsync_4
+      tags:
+        - sync_teardown
+      cron:
+        name: rsync_4
+        state: absent
+
+    - name: Teardown rsync_5
+      tags:
+        - sync_teardown
+      cron:
+        name: rsync_5
+        state: absent
+
+    - name: Teardown rsync_6
+      tags:
+        - sync_teardown
+      cron:
+        name: rsync_6
+        state: absent
+
+    - name: Teardown rsync_7
+      tags:
+        - sync_teardown
+      cron:
+        name: rsync_7
+        state: absent
+
+    - name: Teardown rsync_8
+      tags:
+        - sync_teardown
+      cron:
+        name: rsync_8
+        state: absent
+
+    - name: Teardown rsync_9
+      tags:
+        - sync_teardown
+      cron:
+        name: rsync_9
+        state: absent
+
+    - name: Teardown rsync_10
+      tags:
+        - sync_teardown
+      cron:
+        name: rsync_10
+        state: absent
+
+    - name: Teardown rsync_11
+      tags:
+        - sync_teardown
+      cron:
+        name: rsync_11
+        state: absent
+
+    - name: Teardown rsync_12
+      tags:
+        - sync_teardown
+      cron:
+        name: rsync_12
+        state: absent
