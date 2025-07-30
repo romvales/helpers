@@ -23,6 +23,7 @@
     - name: Ensures /var/www/new_doff/public/system_files/ to sync from node7 to node9
       tags: 
         - sync_install
+        - override
       when: inventory_hostname == 'monsoon_bcl_node9'
       cron:
         name: rsync_1
@@ -32,6 +33,7 @@
     - name: Ensures /var/www/new_doff/public/system_files/ to sync from node9 to node7
       tags:
         - sync_install
+        - override
       when: inventory_hostname == 'sycamore_mnl_node7'
       cron:
         name: rsync_2
@@ -46,6 +48,26 @@
         name: rsync_3
         minute: '*/1'
         job: sudo -u ws3 rsync -avrt -p --rsh='ssh' hp4k6q2@192.168.254.7:{{ system_files_dir }} {{ system_files_dir }}
+
+    - name: Ensures /var/www/new_doff/public/system_files/ to sync to /var/www/system_files/ from node7 to node1
+      tags:
+        - sync_install
+        - override
+      when: inventory_hostname == 'sycamore_mnl_node1'
+      cron:
+        name: rsync_13
+        minute: '*/1'
+        job: sudo -u hp4k6q2 rsync -avrt -p --rsh='ssh' ws3@192.168.254.50:{{ new_doff_system_files_dir }} {{ system_files_dir }}
+
+    - name: Ensures /var/www/new_doff/public/system_files/ to sync to /var/www/system_files from node9 to node8
+      tags:
+        - sync_install
+        - override
+      when: inventory_hostname == 'monsoon_bcl_node8'
+      cron:
+        name: rsync_13
+        minute: '*/1'
+        job: rsync -avrt -p --rsh='ssh' ansible@192.168.253.15:{{ new_doff_system_files_dir }} {{ system_files_dir }}
 
     - name: Install this cron that executes every 5 minutes
       tags:
@@ -263,4 +285,11 @@
         - sync_teardown
       cron:
         name: rsync_12
+        state: absent
+
+    - name: Teardown rsync_13
+      tags:
+        - sync_teardown
+      cron:
+        name: rsync_13
         state: absent
